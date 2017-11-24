@@ -21,10 +21,10 @@ A series of PDFs are used to randomly generate a sample of households. Each simu
 
 #### Calculating Households Sizes
 In each locality, we can get the number of total number of households by number of household members. From these numbers, we can compute a PDF.
-![households pdf](households_pdf.png)
+![households pdf](./images/households_pdf.png)
 
 #### Calculating Incomes
 In each locality, we can get the number of total number of households by income (in 16 buckets < $10k to > $200k). From these numbers, we can compute a PDF.
-![incomes pdf](incomes_pdf.png])
+![incomes pdf](./images/incomes_pdf.png])
 
 #### Calculating Elderly/Disabled
