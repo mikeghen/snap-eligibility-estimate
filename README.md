@@ -1,4 +1,4 @@
-# Estimating Local SNAP Eligibility using Monte-Carlo Methods in Pennsylvania
+# Estimating Local SNAP Eligibility using Monte-Carlo Methods
 
 ## Objective
 Estimate the eligible but not enrolled population by zipcode, county, and congressional district using publicly available data.
