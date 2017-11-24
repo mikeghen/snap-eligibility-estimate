@@ -20,17 +20,22 @@ A series of PDFs are used to randomly generate a sample of households. Each simu
 :warning: Currently assumes that these three PDFs are independent of each other. In reality, household size actually influences income and elderly/disabled.
 
 #### Calculating Households Sizes
-In each locality, we can get the number of total number of households by number of household members. From these numbers, we can compute a PDF.
+In each locality, we can get the number of total number of households by number of household members. From these numbers, we can compute a PDF (sample shown below in **Dist** plot).
 
 | Philadelphia Household Size PDF | Bucks Household Size PDF |
 | --- |---|
 | ![households pdf](./images/households_phila_pdf.png){:height="250px" width="250px"} | ![households pdf](./images/households_bucks_pdf.png){:height="250px" width="250px"} |
 
 #### Calculating Incomes
-In each locality, we can get the number of total number of households by income (in 16 buckets < $10k to > $200k). From these numbers, we can compute a PDF.
+In each locality, we can get the number of total number of households by income (in 16 buckets < $10k to > $200k). From these numbers, we can compute a PDF (sample shown below in **Dist** plot).
 
 | Philadelphia Household Size PDF | Bucks Household Size PDF |
 | --- |---|
 | ![households pdf](./images/incomes_phila_pdf.png){:height="250px" width="250px"} | ![households pdf](./images/incomes_bucks_pdf.png){:height="250px" width="250px"} |
 
 #### Calculating Elderly/Disabled
+
+## US Census Data: American Community Survey Resources
+* [American Community Survey 1-Year Data (2011-2016)](https://www.census.gov/data/developers/data-sets/acs-1year.html)
+* [Variable Definitions](https://api.census.gov/data/2016/acs/acs1/variables.html)
+* [Python wrapper for the US Census API](https://github.com/datamade/census)

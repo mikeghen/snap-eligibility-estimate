@@ -3,6 +3,76 @@ from us import states
 import pandas as pd
 import numpy as np
 
+PA_COUNTIES = {
+    'Adams':	1,
+    'Allegheny':3,
+    'Armstrong':5,
+    'Beaver':	7,
+    'Bedford':	9,
+    'Berks':	11,
+    'Blair':	13,
+    'Bradford':	15,
+    'Bucks':	17,
+    'Butler':	19,
+    'Cambria':	21,
+    'Cameron':	23,
+    'Carbon':	25,
+    'Centre':	27,
+    'Chester':	29,
+    'Clarion':	31,
+    'Clearfield':33,
+    'Clinton':	35,
+    'Columbia':	37,
+    'Crawford':	39,
+    'Cumberland':41,
+    'Dauphin':	43,
+    'Delaware':	45,
+    'Elk':	    47,
+    'Erie':	    49,
+    'Fayette':	51,
+    'Forest':	53,
+    'Franklin':	55,
+    'Fulton':	57,
+    'Greene':	59,
+    'Huntingdon':61,
+    'Indiana':	63,
+    'Jefferson':65,
+    'Juniata':	67,
+    'Lackawanna':69,
+    'Lancaster': 71,
+    'Lawrence':	 73,
+    'Lebanon':	 75,
+    'Lehigh':	 77,
+    'Luzerne':	 79,
+    'Lycoming':	 81,
+    'McKean':	 83,
+    'Mercer':	 85,
+    'Mifflin':	 87,
+    'Monroe':	 89,
+    'Montgomery':91,
+    'Montour':	 93,
+    'Northampton':	95,
+    'Northumberland':	97,
+    'Perry':	        99,
+    'Philadelphia':	    101,
+    'Pike':	            103,
+    'Potter':	        105,
+    'Schuylkill':	    107,
+    'Snyder':	        109,
+    'Somerset':	        111,
+    'Sullivan':	        113,
+    'Susquehanna':	    115,
+    'Tioga':	        117,
+    'Union':	        119,
+    'Venango':	        121,
+    'Warren':	        123,
+    'Washington':	    125,
+    'Wayne':	        127,
+    'Westmoreland':	129,
+    'Wyoming':	    131,
+    'York':	        133
+}
+
 C = Census("79d4f20c2a84412e07d717af5d13929cf7aa3ce5")
 
 HOUSEHOLD_SIZES = [1, 2, 3, 4, 5, 6, 7]
@@ -50,7 +120,7 @@ def get_household_sizes_pdf(state_code, county_code):
 
     # Calculate PDF
     household_size_df['Dist'] = household_size_df['Households'] / household_size_df['Households'].sum()
-    return list(household_size_df['Dist'])
+    return list(household_size_df['Dist']), int(total_households)
 
 
 def get_incomes_pdf(state_code, county_code, household_size=None):
@@ -86,6 +156,7 @@ def get_incomes_pdf(state_code, county_code, household_size=None):
     del income_results[0]['county'] # we know what State we're working with
 
     # Map to a dictionary with labels for dataframe plotting
+    total_incomes = income_results[0]['B19101_001E']
     incomes_dict = {}
     for name, value in income_results[0].items():
         label = acs5_incomes_names_labels[name]
@@ -98,4 +169,4 @@ def get_incomes_pdf(state_code, county_code, household_size=None):
 
     incomes_df['Dist'] = incomes_df['Households'] / incomes_df['Households'].sum()
 
-    return list(incomes_df['Dist'])
+    return list(incomes_df['Dist']), int(total_incomes)
