@@ -48,7 +48,7 @@ This method will use the median income by household size as a seed to adjust the
 | --- |---|
 | ![incomes pdf](./images/incomes_phila_pdf.png){:height="200px" width="200px"} | ![incomes pdf](./images/incomes_bucks_pdf.png){:height="200px" width="200px"} |
 
-These PDFs are adjusted by summing them with a normally distributed probability density function derived for each household size (see `household_size_pdfs.py`). Using the _median_ from US Census data and an _assumed standard deviation_ (std = $200k / 6 = $30k), this method sums the two PDFs together and normalizes them into a _household size adjusted income probability distribution function_.
+These PDFs are adjusted by summing them with a normally distributed probability density function derived for each household size (see `household_size_pdfs.py`). Using the _median_ from US Census data and an _assumed standard deviation_ (sigma = median / 4), this method sums the two PDFs together and normalizes them into a _household size adjusted income probability distribution function_.
 
 Figures below should this household size income adjustment in Philadelphia county. This effectively lowers the number of larger (2+ person) households eligible for SNAP since larger households tend to make more income as demonstrated by a larger median income.
 
