@@ -228,3 +228,43 @@ def is_snap_eligible(household):
         return int(household['size'])
     else:
         return int(household['size'])
+
+
+def get_household_size_incomes_pdf(household_size, state_code, county_code):
+    """
+    Generates a income PDF for household_size households
+    """
+    acs5_household_sizes_median_incomes = {
+        1: 'B19019_002E',
+        2: 'B19019_003E',
+        3: 'B19019_004E',
+        4: 'B19019_005E',
+        5: 'B19019_006E',
+        6: 'B19019_007E',
+        7: 'B19019_008E'
+    }
+
+    field = acs5_household_sizes_median_incomes[household_size]
+    print("FIELD:", field)
+    results = C.acs5.state_county(field, state_code, county_code)
+    print("RESULTS:", results)
+    median_income = results[0][field]
+    print("MEDIAN INCOME:", median_income)
+
+    # NOTE: Assume sigma = median / 4, use median as mean
+    samples = np.random.normal(median_income, median_income/4, 1000)
+    pdf_dict = {
+        0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
+        8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0
+    }
+    for sample in samples:
+        for bucket, rng in INCOMES_BUCKETS.items():
+            if sample < rng[1] and sample >= rng[0]:
+                pdf_dict[bucket] += 1
+    print("PDF DICT:",pdf_dict)
+    incomes_df = pd.DataFrame.from_dict(pdf_dict,orient='index')
+    incomes_df.columns = pd.Index(['Households'])
+    incomes_df['Dist'] = incomes_df['Households'] / incomes_df['Households'].sum()
+    print("INCOMES DF:", incomes_df)
+
+    return list(incomes_df['Dist'])

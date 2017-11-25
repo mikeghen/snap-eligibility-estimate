@@ -50,6 +50,13 @@ This method will use the median income by household size as a seed to adjust the
 
 These PDFs are adjusted by summing them with a normally distributed probability density function derived for each household size (see `household_size_pdfs.py`). Using the _median_ from US Census data and an _assumed standard deviation_ (std = $200k / 6 = $30k), this method sums the two PDFs together and normalizes them into a _household size adjusted income probability distribution function_.
 
+Figures below should this household size income adjustment in Philadelphia county. This effectively lowers the number of larger (2+ person) households eligible for SNAP since larger households tend to make more income as demonstrated by a larger median income.
+
+| 1-person Household Income Adjusted PDF | 4-person Household Income Adjusted PDF  |
+| --- |---|
+| ![incomes pdf](./images/adjusted_income_pdf_phila_1.png){:height="200px" width="200px"} | ![incomes pdf](./images/adjusted_income_pdf_phila_4.png){:height="200px" width="200px"} |
+
+
 #### Calculating Elderly/Disabled
 :warning: Not currently factoring this into the simulation.
 
