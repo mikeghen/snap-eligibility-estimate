@@ -18,5 +18,11 @@ class TestSimulator(unittest.TestCase):
             self.assertTrue(p < 1.0)
             self.assertTrue(p > 0)
 
+    def test_get_income_from_bucket(self):
+        income = simulator.get_income_from_bucket(1)
+        for p in pdf:
+            self.assertTrue(income < 15000)
+            self.assertTrue(income > 10000)
+
 if __name__ == '__main__':
     unittest.main()

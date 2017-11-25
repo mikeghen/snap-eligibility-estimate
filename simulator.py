@@ -2,75 +2,113 @@ from census import Census
 from us import states
 import pandas as pd
 import numpy as np
+import random
+
+# Maps income buckets to range of incomes
+# TODO: Consolidate this with INCOMES
+INCOMES_BUCKETS = {
+    0: [0,9999],      #'< $10k',
+    1: [10000,14999], #'$10k - $14.9k',
+    2: [15000,19999], #'$15k - $19.9k',
+    3: [20000,24999], #'$20k - $24.9k',
+    4: [25000,29999], #'$25k - $29.9k',
+    5: [30000,34999], #'$30k - $34.9k',
+    6: [35000,39999], #'$35k - $39.9k',
+    7: [40000,44999], #'$40k - $44.9k',
+    8: [45000,49999], #'$45k - $49.9k',
+    9: [50000,59999], #'$50k - $59.9k',
+    10: [60000,74999], #'$60k - $74.9k',
+    11: [75000,99999], #'$75k - $99.9k',
+    12: [100000,124999], #'$100k - $124.9k',
+    13: [125000,149999], #'$125k - $149.9k',
+    14: [150000,199999], #'$150k - $199.9k',
+    15: [200000,1000000] #'$200k +'
+}
+
+# Eligibilty stats from:
+# http://www.dhs.pa.gov/citizens/supplementalnutritionassistanceprogram/snapincomelimits/
+# household_size: (max_gross_monthly_income, max_gross_monthly_income_elderly_disabled)
+SNAP_ELIGIBILITY = {
+    0: (1608, 2010),
+    1: (2166, 2708),
+    2: (2723, 3404),
+    3: (3280, 4100),
+    4: (3838, 4798),
+    5: (4395, 5494),
+    6: (4952, 6190),
+    7: (5510, 6888),
+    8: (6068, 7586),
+    9: (6626, 8284)
+}
 
 PA_COUNTIES = {
-    'Adams':	1,
-    'Allegheny':3,
-    'Armstrong':5,
-    'Beaver':	7,
-    'Bedford':	9,
-    'Berks':	11,
-    'Blair':	13,
-    'Bradford':	15,
-    'Bucks':	17,
-    'Butler':	19,
-    'Cambria':	21,
-    'Cameron':	23,
-    'Carbon':	25,
-    'Centre':	27,
-    'Chester':	29,
-    'Clarion':	31,
-    'Clearfield':33,
-    'Clinton':	35,
-    'Columbia':	37,
-    'Crawford':	39,
-    'Cumberland':41,
-    'Dauphin':	43,
-    'Delaware':	45,
-    'Elk':	    47,
-    'Erie':	    49,
-    'Fayette':	51,
-    'Forest':	53,
-    'Franklin':	55,
-    'Fulton':	57,
-    'Greene':	59,
-    'Huntingdon':61,
-    'Indiana':	63,
-    'Jefferson':65,
-    'Juniata':	67,
-    'Lackawanna':69,
-    'Lancaster': 71,
-    'Lawrence':	 73,
-    'Lebanon':	 75,
-    'Lehigh':	 77,
-    'Luzerne':	 79,
-    'Lycoming':	 81,
-    'McKean':	 83,
-    'Mercer':	 85,
-    'Mifflin':	 87,
-    'Monroe':	 89,
-    'Montgomery':91,
-    'Montour':	 93,
-    'Northampton':	95,
-    'Northumberland':	97,
-    'Perry':	        99,
-    'Philadelphia':	    101,
-    'Pike':	            103,
-    'Potter':	        105,
-    'Schuylkill':	    107,
-    'Snyder':	        109,
-    'Somerset':	        111,
-    'Sullivan':	        113,
-    'Susquehanna':	    115,
-    'Tioga':	        117,
-    'Union':	        119,
-    'Venango':	        121,
-    'Warren':	        123,
-    'Washington':	    125,
-    'Wayne':	        127,
-    'Westmoreland':	129,
-    'Wyoming':	    131,
-    'York':	        133
+    # 'Adams':	1,
+    # 'Allegheny':3,
+    # 'Armstrong':5,
+    # 'Beaver':	7,
+    # 'Bedford':	9,
+    # 'Berks':	11,
+    # 'Blair':	13,
+    # 'Bradford':	15,
+    'Bucks':	17
+    # 'Butler':	19,
+    # 'Cambria':	21,
+    # 'Cameron':	23,
+    # 'Carbon':	25,
+    # 'Centre':	27,
+    # 'Chester':	29,
+    # 'Clarion':	31,
+    # 'Clearfield':33,
+    # 'Clinton':	35,
+    # 'Columbia':	37,
+    # 'Crawford':	39,
+    # 'Cumberland':41,
+    # 'Dauphin':	43,
+    # 'Delaware':	45,
+    # 'Elk':	    47,
+    # 'Erie':	    49,
+    # 'Fayette':	51,
+    # 'Forest':	53,
+    # 'Franklin':	55,
+    # 'Fulton':	57,
+    # 'Greene':	59,
+    # 'Huntingdon':61,
+    # 'Indiana':	63,
+    # 'Jefferson':65,
+    # 'Juniata':	67,
+    # 'Lackawanna':69,
+    # 'Lancaster': 71,
+    # 'Lawrence':	 73,
+    # 'Lebanon':	 75,
+    # 'Lehigh':	 77,
+    # 'Luzerne':	 79,
+    # 'Lycoming':	 81,
+    # 'McKean':	 83,
+    # 'Mercer':	 85,
+    # 'Mifflin':	 87,
+    # 'Monroe':	 89,
+    # 'Montgomery':91,
+    # 'Montour':	 93,
+    # 'Northampton':	95,
+    # 'Northumberland':	97,
+    # 'Perry':	        99,
+    # 'Philadelphia':	    101,
+    # 'Pike':	            103,
+    # 'Potter':	        105,
+    # 'Schuylkill':	    107,
+    # 'Snyder':	        109,
+    # 'Somerset':	        111,
+    # 'Sullivan':	        113,
+    # 'Susquehanna':	    115,
+    # 'Tioga':	        117,
+    # 'Union':	        119,
+    # 'Venango':	        121,
+    # 'Warren':	        123,
+    # 'Washington':	    125,
+    # 'Wayne':	        127,
+    # 'Westmoreland':	129,
+    # 'Wyoming':	    131,
+    # 'York':	        133
 }
 
 C = Census("79d4f20c2a84412e07d717af5d13929cf7aa3ce5")
@@ -170,3 +208,23 @@ def get_incomes_pdf(state_code, county_code, household_size=None):
     incomes_df['Dist'] = incomes_df['Households'] / incomes_df['Households'].sum()
 
     return list(incomes_df['Dist']), int(total_incomes)
+
+
+def get_income_from_bucket(bucket):
+    """
+    Returns an exact income in dollars based on the income bucket (integer)
+    """
+    low, high  = INCOMES_BUCKETS[bucket]
+    return random.uniform(low, high)
+
+
+def is_snap_eligible(household):
+    """
+    Returns 1 if household size and income make it eligible for SNAP in PA
+    0 otherwise
+    """
+    max_monthly_income, x = SNAP_ELIGIBILITY[int(household['size'])]
+    if max_monthly_income >= household['income'] / 12:
+        return int(household['size'])
+    else:
+        return int(household['size'])
