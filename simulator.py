@@ -42,15 +42,15 @@ SNAP_ELIGIBILITY = {
 }
 
 PA_COUNTIES = {
-    # 'Adams':	1,
-    # 'Allegheny':3,
+    #'Adams':	1,
+    'Allegheny':3,
     # 'Armstrong':5,
     # 'Beaver':	7,
     # 'Bedford':	9,
     # 'Berks':	11,
     # 'Blair':	13,
     # 'Bradford':	15,
-    'Bucks':	17
+    'Bucks':	17,
     # 'Butler':	19,
     # 'Cambria':	21,
     # 'Cameron':	23,
@@ -65,7 +65,7 @@ PA_COUNTIES = {
     # 'Cumberland':41,
     # 'Dauphin':	43,
     # 'Delaware':	45,
-    # 'Elk':	    47,
+    'Elk':	    47,
     # 'Erie':	    49,
     # 'Fayette':	51,
     # 'Forest':	53,
@@ -87,12 +87,12 @@ PA_COUNTIES = {
     # 'Mercer':	 85,
     # 'Mifflin':	 87,
     # 'Monroe':	 89,
-    # 'Montgomery':91,
+    'Montgomery':91,
     # 'Montour':	 93,
     # 'Northampton':	95,
     # 'Northumberland':	97,
     # 'Perry':	        99,
-    # 'Philadelphia':	    101,
+    'Philadelphia':	    101
     # 'Pike':	            103,
     # 'Potter':	        105,
     # 'Schuylkill':	    107,
@@ -164,8 +164,6 @@ def get_household_sizes_pdf(state_code, county_code):
 def get_incomes_pdf(state_code, county_code, household_size=None):
     """
     Returns a probability density function for incomes. Parallel to INCOMES
-
-    TODO: Adjust PDF based on household size.
     """
     acs5_incomes_names_labels = {
         'B19101_001E': 'Total',
@@ -218,16 +216,61 @@ def get_income_from_bucket(bucket):
     return random.uniform(low, high)
 
 
+def get_elderly_households_probabilities(state_code, county_code):
+    """
+    Returns the probabilty that a household will have one or more people 65 years and over
+    """
+    acs5_elderly_labels = {
+        'B11007_003E': 'Estimate!!Total!!Households with one or more people 65 years and over!!1-person household',
+        'B11007_004E': 'Estimate!!Total!!Households with one or more people 65 years and over!!2-or-more-person household',
+        'B11007_008E': 'Estimate!!Total!!Households with no people 65 years and over!!1-person households',
+        'B11007_009E': 'Estimate!!Total!!Households with no people 65 years and over!!2-or-more-person household'
+    }
+
+    elderly_fields = [name for name, label in acs5_elderly_labels.items()]
+    elderly_results = C.acs5.state_county(elderly_fields, state_code, county_code)
+
+    del elderly_results[0]['state']  # we know what state we're working with
+    del elderly_results[0]['county'] # we know what county we're working with
+
+    elderly_numerator = float(elderly_results[0]['B11007_003E'])
+    elderly_denominator = float(elderly_results[0]['B11007_008E']) + elderly_numerator
+    one_person_elderly_prob = elderly_numerator / elderly_denominator
+
+    elderly_numerator = float(elderly_results[0]['B11007_004E'])
+    elderly_denominator = float(elderly_results[0]['B11007_009E']) + elderly_numerator
+    two_or_more_person_elderly_prob = elderly_numerator / elderly_denominator
+
+    return one_person_elderly_prob, two_or_more_person_elderly_prob
+
+
+def build_elderly_probabilities():
+    """
+    Returns a dictionary where keys are county codes and tuples probabilities
+
+    NOTE: This needs some work, coupled to PA, did this quick for a demo
+    """
+    elderly_rates_by_county = {}
+    for county, fips_code in PA_COUNTIES.items():
+        one_person_elderly_prob, two_or_more_person_elderly_prob = \
+           get_elderly_households_probabilities(42,fips_code)
+        elderly_rates_by_county[fips_code] = (one_person_elderly_prob, two_or_more_person_elderly_prob)
+
+    return elderly_rates_by_county
+
+
 def is_snap_eligible(household):
     """
     Returns 1 if household size and income make it eligible for SNAP in PA
     0 otherwise
     """
-    max_monthly_income, x = SNAP_ELIGIBILITY[int(household['size'])]
+
+    max_monthly_income = SNAP_ELIGIBILITY[int(household['size'])]
+
     if max_monthly_income >= household['income'] / 12:
         return int(household['size'])
     else:
-        return int(household['size'])
+        return 0
 
 
 def get_household_size_incomes_pdf(household_size, state_code, county_code):
@@ -245,14 +288,11 @@ def get_household_size_incomes_pdf(household_size, state_code, county_code):
     }
 
     field = acs5_household_sizes_median_incomes[household_size]
-    print("FIELD:", field)
     results = C.acs5.state_county(field, state_code, county_code)
-    print("RESULTS:", results)
     median_income = results[0][field]
-    print("MEDIAN INCOME:", median_income)
 
     # NOTE: Assume sigma = median / 4, use median as mean
-    samples = np.random.normal(median_income, median_income/4, 1000)
+    samples = np.random.normal(median_income, 200000/6, 10000)
     pdf_dict = {
         0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
         8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 0
@@ -261,10 +301,90 @@ def get_household_size_incomes_pdf(household_size, state_code, county_code):
         for bucket, rng in INCOMES_BUCKETS.items():
             if sample < rng[1] and sample >= rng[0]:
                 pdf_dict[bucket] += 1
-    print("PDF DICT:",pdf_dict)
+
     incomes_df = pd.DataFrame.from_dict(pdf_dict,orient='index')
     incomes_df.columns = pd.Index(['Households'])
     incomes_df['Dist'] = incomes_df['Households'] / incomes_df['Households'].sum()
-    print("INCOMES DF:", incomes_df)
 
     return list(incomes_df['Dist'])
+
+
+class MonteCarlo:
+
+    def __init__(self):
+        print("Initializing MonteCarlo")
+        self.STATE_CODE = 42
+        self.elderly_rates_by_county = build_elderly_probabilities()
+        print("Done Initializing MonteCarlo")
+
+
+    def is_snap_eligible(self, household):
+        """
+        Returns 1 if household size and income make it eligible for SNAP in PA
+        0 otherwise
+
+        TODO: elderly_rates_by_county was added for a quick demo, probably better to
+              move this an other functions into the class...
+        """
+        # 1 in 5 households has an elderly or disabled person
+        is_elderly = np.random.choice([0,1,2,3,4])
+
+        max_monthly_income, max_gross_monthly_income_elderly_disabled = SNAP_ELIGIBILITY[int(household['size'])]
+
+        if is_elderly == 0:
+            income_threshold = max_gross_monthly_income_elderly_disabled
+        else:
+            income_threshold = max_monthly_income
+
+        if income_threshold >= household['income'] / 12:
+            return int(household['size'])
+        else:
+            return 0
+
+
+    def run(self, county_fips):
+        """
+        Simulates SNAP eligibilty for a single state county
+        """
+        print("Running for", county_fips )
+        results = {}
+
+        # Run Monte Carlo Simulation for Households' Sizes for PA
+        p, num_households = get_household_sizes_pdf(self.STATE_CODE, county_fips)
+        total_households = num_households
+        household_size_df = pd.DataFrame()
+        income_df = pd.DataFrame()
+        households = [] # Parallel to incomes
+        incomes = []    # Parallel to households
+
+        household_size_sim_data = [0,0,0,0,0,0,0]
+        for i in range(0,num_households):
+            household_size = np.random.choice(np.arange(0, 7), p=p)
+            households.append(household_size)
+            household_size_sim_data[household_size] += 1
+
+        household_size_df = pd.concat([household_size_df, pd.DataFrame({county_fips:household_size_sim_data})], axis=1)
+
+        # Run Monte Carlo Simulation for Incomes for Philadelphia
+        p, n = get_incomes_pdf(self.STATE_CODE, county_fips)
+
+        income_sim_data = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        for i in range(0,num_households):
+            income = np.random.choice(np.arange(0, 16), p=p)
+            incomes.append(income)
+            income_sim_data[income] += 1
+
+        income_df = pd.concat([income_df, pd.DataFrame({county_fips:income_sim_data})], axis=1)
+
+        """
+        Zip incomes and household sizes together in a DataFrame, compute eligibilty
+        output the results.
+        """
+        households_df = pd.DataFrame({'size':households, 'income':incomes})
+        households_df['income'] = households_df['income'].apply(get_income_from_bucket)
+        households_df['snap_eligible'] = households_df.apply(self.is_snap_eligible, axis=1)
+        households_df.head(100).to_csv('data.csv')
+        individuals = households_df['size'].sum()
+        snap_eligible = households_df['snap_eligible'].sum()
+
+        return (county_fips, snap_eligible)
